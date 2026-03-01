@@ -10,6 +10,7 @@ namespace GTBStatementService.Data
         }
 
         public DbSet<CustomerProfile> Profiles { get; set; }
+        public DbSet<Statement> Statements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

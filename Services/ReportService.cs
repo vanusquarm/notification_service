@@ -1,6 +1,5 @@
 using System.Net.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using GTBStatementService.Data;
 
 namespace GTBStatementService.Services
 {
@@ -16,8 +15,7 @@ namespace GTBStatementService.Services
             _httpClient = httpClient;
             _baseUrl = configuration["StatementSettings:CoreBaseUrl"] ?? string.Empty;
             _logger = logger;
-            _repository = repository;
-        }
+            _repository = repository;        }
 
         public async Task<byte[]> GetStatementReportAsync(string customerNo, string format, string accountList)
         {
@@ -56,9 +54,20 @@ namespace GTBStatementService.Services
                 var from = DateTime.Now.AddDays(-30);
                 var to = DateTime.Now;
 
-                var txns = _repository.GetAccountTransactions(accountList, from, to);
+                var txns = _repository.GetAccountStatements(accountList, from, to);
+                var statement = new BankStatement
+                {
+                    BankName = "GUARANTY TRUST BANK (LIBERIA) LIMITED",
+                    CustomerName = "MULBAH, SUMO KOLLIE",
+                    AccountNumber = "0800824/002/0001/000",
+                    AccountType = "CURRENT ACCOUNT",
+                    Currency = "USD",
+                    PeriodFrom = new DateTime(2023, 2, 1),
+                    PeriodTo = new DateTime(2026, 2, 28),
+                    Transactions = txns
+                };
 
-                var pdf = new BankStatementPdf(header, txns);
+                var pdf = new PdfService(statement);
 
                 // Generate PDF into memory
                 return pdf.GeneratePdfBytes();
@@ -70,13 +79,6 @@ namespace GTBStatementService.Services
                     customerNo);
                 throw;
             }
-        }
-
-        private byte[] GeneratePdfBytes()
-        {
-            using var stream = new MemoryStream();
-            document.Save(stream); 
-            return stream.ToArray();
         }
     }
 }

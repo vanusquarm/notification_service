@@ -2,11 +2,11 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-public class BankStatementPdf : IDocument
+public class PdfService : IDocument
 {
     private readonly BankStatement _data;
 
-    public BankStatementPdf(BankStatement data)
+    public PdfService(BankStatement data)
     {
         _data = data;
     }
@@ -76,5 +76,25 @@ public class BankStatementPdf : IDocument
                 table.Cell().Text(t.Balance.ToString("N2"));
             }
         });
+    }
+
+    public byte[] GeneratePdfBytes()
+    {
+        try
+        {
+            // Step 1: Create the PDF document using the Compose method
+            var document = Document.Create(container =>
+            {
+                Compose(container);
+            });
+
+            // Step 2: Generate the PDF byte array
+            return document.GeneratePdf();
+        }
+        catch (Exception ex)
+        {
+            // Handle any exceptions and log if necessary
+            throw new InvalidOperationException("Failed to generate PDF.", ex);
+        }
     }
 }

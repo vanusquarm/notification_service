@@ -1,9 +1,17 @@
-class StatementRepository
-{
-    private readonly DataContext _context;
+using GTBStatementService.Data;
+using Microsoft.Identity.Client;
+using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
+using System.Data;
 
-    public StatementRepository(DataContext context)
+class StatementRepository: IStatementRepository
+{
+    private readonly GTMailDbContext _context;
+    private readonly string _connString;
+
+    public StatementRepository(IConfiguration connString, GTMailDbContext context)
     {
+        _connString = connString.GetConnectionString("OracleDb") ?? throw new ArgumentNullException("No finacle connection string specified");
         _context = context;
     }
 
@@ -30,7 +38,8 @@ class StatementRepository
             {
                 Date = reader.GetDateTime(0),
                 Description = reader.GetString(1),
-                Amount = reader.GetDecimal(2),
+                Debit = reader.GetDecimal(2),
+                Credit = reader.GetDecimal(2),
                 Balance = reader.GetDecimal(3)
             });
         }
@@ -52,8 +61,8 @@ class StatementRepository
         cmd.Parameters.Add(":fromDate", OracleDbType.Date).Value = from;
         cmd.Parameters.Add(":toDate", OracleDbType.Date).Value = to;
 
-        await conn.Open();
-        using var reader = await cmd.ExecuteReader();
+        conn.Open();
+        using var reader = cmd.ExecuteReader();
 
         var list = new List<StatementTransaction>();
         while (reader.Read())
@@ -62,7 +71,8 @@ class StatementRepository
             {
                 Date = reader.GetDateTime(0),
                 Description = reader.GetString(1),
-                Amount = reader.GetDecimal(2),
+                Debit = reader.GetDecimal(2),
+                Credit = reader.GetDecimal(2),
                 Balance = reader.GetDecimal(3)
             });
         }
@@ -75,10 +85,10 @@ class StatementRepository
         return await _context.Statements.FindAsync(id);
     }
 
-    public async Task<IEnumerable<Statement>> GetAllStatementsAsync()
-    {
-        return await _context.Statements.ToListAsync();
-    }
+    //public async Task<IEnumerable<Statement>> GetAllStatementsAsync()
+    //{
+    //    return await _context.Statements.ToListAsync();
+    //}
 
     public async Task AddStatementAsync(Statement statement)
     {
@@ -100,5 +110,15 @@ class StatementRepository
             _context.Statements.Remove(statement);
             await _context.SaveChangesAsync();
         }
+    }
+
+    public List<StatementTransaction> GetAccountStatements(string accountList, DateTime from, DateTime to)
+    {
+        //var list = accountList.Split(",")[];
+        //accountList.Select(accountNo => GetStatements(
+        //        accountNo, from, to));
+
+        return GetStatements(
+                accountList, from, to);
     }
 }

@@ -2,8 +2,6 @@ using GTBStatementService;
 using GTBStatementService.Data;
 using GTBStatementService.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -13,6 +11,8 @@ string connectionString = builder.Configuration.GetConnectionString("ConnectGTMa
 
 builder.Services.AddDbContext<GTMailDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+builder.Services.AddScoped<IStatementRepository, StatementRepository>();
 
 // Register HttpClient for ReportService
 builder.Services.AddHttpClient<IReportService, ReportService>();

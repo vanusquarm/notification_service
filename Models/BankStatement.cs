@@ -7,15 +7,14 @@ public class BankStatement
     public string Currency { get; set; }
     public DateTime PeriodFrom { get; set; }
     public DateTime PeriodTo { get; set; }
-    public List<Transaction> Transactions { get; set; } = new();
+    public List<StatementTransaction> Transactions { get; set; } = new();
 }
 
-public class Transaction
+public class StatementTransaction
 {
     public DateTime Date { get; set; }
-    public string Description { get; set; }
+    public string? Description { get; set; }
     public decimal Debit { get; set; }
     public decimal Credit { get; set; }
     public decimal Balance { get; set; }
 }
-
