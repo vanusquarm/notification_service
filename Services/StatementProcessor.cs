@@ -8,6 +8,7 @@ namespace GTBStatementService.Services
 {
     public class StatementProcessor
     {
+        private readonly IStatementRepository _repository;
         private readonly GTMailDbContext _dbContext;
         private readonly IEmailService _emailService;
         private readonly IReportService _reportService;
@@ -15,12 +16,14 @@ namespace GTBStatementService.Services
         private readonly ILogger<StatementProcessor> _logger;
 
         public StatementProcessor(
+            IStatementRepository repository,
             GTMailDbContext dbContext,
             IEmailService emailService,
             IReportService reportService,
             IConfiguration configuration,
             ILogger<StatementProcessor> logger)
         {
+            _repository = repository;
             _dbContext = dbContext;
             _emailService = emailService;
             _reportService = reportService;
@@ -33,9 +36,7 @@ namespace GTBStatementService.Services
             _logger.LogInformation("Statement processing started at: {time}", DateTimeOffset.Now);
 
             // Fetch active profiles (Status 3 = Active)
-            var activeProfiles = await _dbContext.Profiles
-                .Where(p => p.Status == 3 && !string.IsNullOrEmpty(p.Email))
-                .ToListAsync();
+            var activeProfiles = await _repository.GetCustomerProfileAsync();
 
             _logger.LogInformation("Found {Count} active profiles to evaluate.", activeProfiles.Count);
 
@@ -103,7 +104,7 @@ namespace GTBStatementService.Services
         {
             _logger.LogInformation("Generating {Frequency} statement for {CustomerNo}", frequency, profile.CustomerNo);
 
-            string format = profile.ExportFormat?.ToLower() ?? "pdf";
+            string format = profile.ExportFormat == 1 ? "pdf" : "xls";
             string fileName = $"Statement_{profile.CustomerNo}_{DateTime.Now:yyyyMMdd}.{format}";
             
             // 1. Fetch Report from API

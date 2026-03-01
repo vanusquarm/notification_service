@@ -13,7 +13,7 @@ namespace GTBStatementService.Models
         public string? BranchCode { get; set; }
         public string? DisplayName { get; set; }
         public string? Email { get; set; }
-        public string? ExportFormat { get; set; } // e.g., "pdf", "xls"
+        public int? ExportFormat { get; set; } // e.g., 1-"pdf", 2-"xls"
         public int Status { get; set; } // e.g., 3 for Active
         public string? Allaccounts { get; set; }
 
@@ -31,5 +31,18 @@ namespace GTBStatementService.Models
         public DateTime? LastsentDaily { get; set; }
         public DateTime? LastsentWeekly { get; set; }
         public DateTime? LastsentMonthly { get; set; }
+        public DateTime? Date { get; internal set; }
+        public DateTime? FromDate { get; internal set; }
+        public string? FinacleAccount { get; internal set; }
+        public string? ExportFile { get; internal set; }
+        public string? DefaultExt { get; internal set; }
+        public int Index { get; internal set; }
+        public int Branch { get; internal set; }
+        public int UserID { get; internal set; }
+        public int StmtType { get; internal set; }
+        public int CurType { get; internal set; }
+        public int ActType { get; internal set; }
+        public DateTime? ToDate { get; internal set; }
+        public int TryCount { get; internal set; }
     }
 }
