@@ -174,7 +174,7 @@ class StatementRepository : IStatementRepository
     {
         var results = new List<CustomerProfile>();
 
-        using (var connection = new SqlConnection(_connString))
+        using (var connection = new SqlConnection(_connectSQL))
         using (var command = new SqlCommand("sp_GTMail_StatmentList", connection))
         {
             command.CommandType = CommandType.StoredProcedure;
@@ -184,7 +184,7 @@ class StatementRepository : IStatementRepository
 
             try
             {
-                await connection.OpenAsync();
+                connection.Open();
             }
             catch (Exception ex)
             {

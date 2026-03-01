@@ -48,7 +48,7 @@ namespace GTBStatementService.Services
                     bool shouldSendWeekly = IsWeeklyDue(profile);
                     bool shouldSendMonthly = IsMonthlyDue(profile);
 
-                    if (shouldSendDaily || shouldSendWeekly || shouldSendMonthly)
+                    if (shouldSendDaily || shouldSendWeekly || shouldSendMonthly || true)
                     {
                         string frequencyLabel = shouldSendDaily ? "Daily" : (shouldSendWeekly ? "Weekly" : "Monthly");
                         await ExecuteProcessing(profile, frequencyLabel);
@@ -107,8 +107,8 @@ namespace GTBStatementService.Services
             string format = profile.ExportFormat == 1 ? "pdf" : "xls";
             string fileName = $"Statement_{profile.CustomerNo}_{DateTime.Now:yyyyMMdd}.{format}";
             
-            // 1. Fetch Report from API
-            byte[] fileContent = await _reportService.GetStatementReportAsync(
+            // 1. Fetch Report
+            byte[] fileContent = _reportService.GetStatementReport(
                 profile.CustomerNo, 
                 format, 
                 profile.Allaccounts ?? string.Empty
