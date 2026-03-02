@@ -1,5 +1,7 @@
 using System.Net.Http;
 using GTBStatementService.Data;
+using GTBStatementService.Data.Mock;
+using GTBStatementService.Models;
 
 namespace GTBStatementService.Services
 {
@@ -43,7 +45,7 @@ namespace GTBStatementService.Services
             }
         }
 
-        public byte[] GetStatementReport(string customerNo, string format, string accountList)
+        public List<byte[]> GetStatementReport(string customerNo, string format, string? accountList = null)
         {
             try
             {
@@ -54,23 +56,36 @@ namespace GTBStatementService.Services
                 var from = DateTime.Now.AddDays(-30);
                 var to = DateTime.Now;
 
-                var txns = _repository.GetAccountStatements(accountList, from, to);
-                var statement = new BankStatement
-                {
-                    BankName = "GUARANTY TRUST BANK (LIBERIA) LIMITED",
-                    CustomerName = "MULBAH, SUMO KOLLIE",
-                    AccountNumber = "0800824/002/0001/000",
-                    AccountType = "CURRENT ACCOUNT",
-                    Currency = "USD",
-                    PeriodFrom = new DateTime(2023, 2, 1),
-                    PeriodTo = new DateTime(2026, 2, 28),
-                    Transactions = txns
-                };
+                var accounts = (!string.IsNullOrEmpty(accountList)) ? accountList?.Split(",")
+                    .Select(x => new Account() { AccountId = x, AccountName = "", AccountType = "", Currency = ""})
+                    : [];
 
-                var pdf = new PdfService(statement);
+                if (!accounts.Any())
+                    accounts = _repository.GetCustomerAccounts(accountList).ToList();
+
+                var statements = new List<BankStatement>();
+
+                foreach (var account in accounts)
+                {
+                    var txns = _repository.GetAccountTransactions(account.AccountId, from, to);
+
+                    statements.Add(new BankStatement
+                    {
+                        BankName = "GUARANTY TRUST BANK (LIBERIA) LIMITED",
+                        CustomerName = account.AccountName,
+                        AccountNumber = account.AccountId,
+                        AccountType = account.AccountType,
+                        Currency = account.Currency,
+                        PeriodFrom = from,
+                        PeriodTo = to,
+                        Transactions = txns
+                    });
+                }
+
+                statements.Add(MockFactory.CreateMock()); // For testing
 
                 // Generate PDF into memory
-                return pdf.GeneratePdfBytes();
+                return PdfService.GeneratePdfBytes(statements);
             }
             catch (Exception ex)
             {

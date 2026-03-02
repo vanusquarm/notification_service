@@ -6,7 +6,8 @@ namespace GTBStatementService.Data
     {
         List<StatementTransaction> GetAccountStatements(string accountList, DateTime from, DateTime to);
         Task<List<CustomerProfile>> GetCustomerProfileAsync();
-         List<BankStatement> GetCustomerAccounts(string customerId);
-
+        List<Account> GetCustomerAccounts(string customerId);
+        public List<StatementTransaction> GetAccountTransactions(
+            string accountNo, DateTime from, DateTime to);
     }
 }

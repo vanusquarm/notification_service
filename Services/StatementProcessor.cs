@@ -108,7 +108,7 @@ namespace GTBStatementService.Services
             string fileName = $"Statement_{profile.CustomerNo}_{DateTime.Now:yyyyMMdd}.{format}";
             
             // 1. Fetch Report
-            byte[] fileContent = _reportService.GetStatementReport(
+            List<byte[]> fileContent = _reportService.GetStatementReport(
                 profile.CustomerNo, 
                 format, 
                 profile.Allaccounts ?? string.Empty
@@ -118,12 +118,14 @@ namespace GTBStatementService.Services
             string subject = $"{_configuration["StatementSettings:EmailSubject"]} - {frequency} ({DateTime.Now:MMM yyyy})";
             string body = $"Dear {profile.DisplayName},<br><br>Please find attached your {frequency} account statement.<br><br>Regards,<br>GTBank";
 
-            await _emailService.SendStatementAsync(profile.Email!, subject, body, fileContent, fileName);
+            await _emailService.SendStatementAsync(profile.Email!, subject, body, fileContent);
 
             // 3. Update DB
             if (frequency == "Daily") profile.LastsentDaily = DateTime.Now;
             else if (frequency == "Weekly") profile.LastsentWeekly = DateTime.Now;
             else if (frequency == "Monthly") profile.LastsentMonthly = DateTime.Now;
+
+            profile.Status = 1;
 
             _dbContext.Profiles.Update(profile);
             await _dbContext.SaveChangesAsync();

@@ -2,8 +2,11 @@ using GTBStatementService;
 using GTBStatementService.Data;
 using GTBStatementService.Services;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Database Configuration
 string connectionString = builder.Configuration.GetConnectionString("ConnectGTMail") 

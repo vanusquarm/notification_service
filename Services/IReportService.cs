@@ -5,6 +5,6 @@ namespace GTBStatementService.Services
     public interface IReportService
     {
         Task<byte[]> GetStatementReportAsync(string customerNo, string format, string accountList);
-        byte[] GetStatementReport(string customerNo, string format, string accountList);
+        List<byte[]> GetStatementReport(string customerNo, string format, string accountList);
     }
 }

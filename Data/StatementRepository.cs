@@ -55,11 +55,11 @@ class StatementRepository : IStatementRepository
         return list;
     }
 
-    public List<StatementTransaction> GetStatements(
+    public List<StatementTransaction> GetAccountTransactions(
         string accountNo, DateTime from, DateTime to)
     {
         const string sqlResource =
-            "Notifier.Assets.GetAccountTransactions.sql";
+            "Assets.GetAccountTransactions.sql";
 
         var sql = SqlLoader.Load(sqlResource);
 
@@ -123,27 +123,27 @@ class StatementRepository : IStatementRepository
 
     public List<StatementTransaction> GetAccountStatements(string accountList, DateTime from, DateTime to)
     {
-        //var list = accountList.Split(",")[];
-        //accountList.Select(accountNo => GetStatements(
-        //        accountNo, from, to));
-
-
-        return GetStatements(
+        return GetAccountTransactions(
                 accountList, from, to);
     }
 
 
-    public List<BankStatement> GetCustomerAccounts(string customerId)
+    public List<Account> GetCustomerAccounts(string customerId)
     {
-        var results = new List<BankStatement>();
+        var results = new List<Account>();
 
         string query = @"
-            SELECT foracid
-            FROM tbaadm.gam
+        SELECT
+            g.foracid as Account_Id,
+            g.acct_name as Account_Name,
+            g.schm_type as Account_Type,
+            g.acct_crncy_code as Currency
+        FROM
+            tbaadm.gam g
             WHERE cif_id = :CUSTOMER_ID
               AND del_flg = 'N'";
 
-        using (var connection = new OracleConnection("Your_Connection_String"))
+        using (var connection = new OracleConnection(_connString))
         using (var command = new OracleCommand(query, connection))
         {
             command.BindByName = true;
@@ -159,9 +159,12 @@ class StatementRepository : IStatementRepository
             {
                 while (reader.Read())
                 {
-                    results.Add(new BankStatement
+                    results.Add(new Account()
                     {
-                        AccountNumber = reader["foracid"].ToString()
+                        AccountId = reader["ACCOUNT_ID"].ToString()!,
+                        AccountName = reader["ACCOUNT_NAME"].ToString()!,
+                        AccountType = reader["ACCOUNT_TYPE"].ToString()!,
+                        Currency = reader["CURRENCY"].ToString()!
                     });
                 }
             }
@@ -234,5 +237,29 @@ class StatementRepository : IStatementRepository
             DisplayName = "John Doe",
             Email = "  "
         };
-    } 
+    }
+
+    public List<StatementTransaction> GetAccountTransactions(string accountList)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool MarkAsSent(long index)
+    {
+        int rowsAffected = 0;
+
+        using (var connection = new SqlConnection(_connString))
+        using (var command = new SqlCommand("sp_GTMail_UpdateStatus", connection))
+        {
+            command.CommandType = CommandType.StoredProcedure;
+
+            command.Parameters.Add("@Index", SqlDbType.BigInt).Value = index;
+            command.Parameters.Add("@Status", SqlDbType.Int).Value = 1;
+
+            connection.Open();
+            rowsAffected = command.ExecuteNonQuery();
+        }
+
+        return rowsAffected > 0;
+    }
 }

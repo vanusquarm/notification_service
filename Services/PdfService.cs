@@ -97,4 +97,17 @@ public class PdfService : IDocument
             throw new InvalidOperationException("Failed to generate PDF.", ex);
         }
     }
+
+    public static List<byte[]> GeneratePdfBytes(List<BankStatement> statements)
+    {
+        var result = new List<byte[]>();
+
+        foreach (var statement in statements)
+        {
+            var service = new PdfService(statement);
+            result.Add(service.GeneratePdfBytes());
+        }
+
+        return result;
+    }
 }
