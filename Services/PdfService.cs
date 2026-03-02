@@ -37,7 +37,7 @@ public class PdfService : IDocument
         {
             col.Item().Text(_data.BankName).Bold().FontSize(14);
             col.Item().Text("CUSTOMER STATEMENT").Bold();
-            col.Item().Text(_data.CustomerName);
+            col.Item().Text(_data.AccountName);
             col.Item().Text($"Account No: {_data.AccountNumber}");
             col.Item().Text($"Account Type: {_data.AccountType} | Currency: {_data.Currency}");
             col.Item().Text($"Period: {_data.PeriodFrom:dd MMM yyyy} - {_data.PeriodTo:dd MMM yyyy}");
@@ -47,7 +47,7 @@ public class PdfService : IDocument
 
     void Content(IContainer container)
     {
-        container.Table(table =>
+        container.Table((Action<TableDescriptor>)(table =>
         {
             table.ColumnsDefinition(columns =>
             {
@@ -69,13 +69,13 @@ public class PdfService : IDocument
 
             foreach (var t in _data.Transactions)
             {
-                table.Cell().Text(t.Date.ToString("dd/MM/yy"));
+                table.Cell().Text((string)t.TransactionDate.ToString("dd/MM/yy"));
                 table.Cell().Text(t.Description);
                 table.Cell().Text(t.Debit == 0 ? "" : t.Debit.ToString("N2"));
                 table.Cell().Text(t.Credit == 0 ? "" : t.Credit.ToString("N2"));
                 table.Cell().Text(t.Balance.ToString("N2"));
             }
-        });
+        }));
     }
 
     public byte[] GeneratePdfBytes()

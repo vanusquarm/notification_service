@@ -12,7 +12,7 @@ namespace GTBStatementService.Data.Mock
         {
             return new BankStatement
             {
-                CustomerName = "John Doe",
+                AccountName = "John Doe",
                 AccountNumber = "1234567890",
                 AccountType = "Savings",
                 Currency = "USD",
@@ -22,7 +22,7 @@ namespace GTBStatementService.Data.Mock
             {
                 new StatementTransaction
                 {
-                    Date = new DateTime(2025, 1, 2),
+                    TransactionDate = new DateTime(2025, 1, 2),
                     Description = "Opening Balance",
                     Debit = 0,
                     Credit = 0,
@@ -30,7 +30,7 @@ namespace GTBStatementService.Data.Mock
                 },
                 new StatementTransaction
                 {
-                    Date = new DateTime(2025, 1, 5),
+                    TransactionDate = new DateTime(2025, 1, 5),
                     Description = "ATM Withdrawal",
                     Debit = 200m,
                     Credit = 0,
@@ -38,7 +38,7 @@ namespace GTBStatementService.Data.Mock
                 },
                 new StatementTransaction
                 {
-                    Date = new DateTime(2025, 1, 10),
+                    TransactionDate = new DateTime(2025, 1, 10),
                     Description = "Salary Deposit",
                     Debit = 0,
                     Credit = 1500m,
@@ -46,7 +46,7 @@ namespace GTBStatementService.Data.Mock
                 },
                 new StatementTransaction
                 {
-                    Date = new DateTime(2025, 1, 20),
+                    TransactionDate = new DateTime(2025, 1, 20),
                     Description = "Online Transfer",
                     Debit = 300m,
                     Credit = 0,

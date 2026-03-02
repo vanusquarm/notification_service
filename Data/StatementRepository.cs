@@ -45,7 +45,7 @@ class StatementRepository : IStatementRepository
         {
             list.Add(new StatementTransaction
             {
-                Date = reader.GetDateTime(0),
+                TransactionDate = reader.GetDateTime(0),
                 Description = reader.GetString(1),
                 Debit = reader.GetDecimal(2),
                 Credit = reader.GetDecimal(2),
@@ -78,7 +78,7 @@ class StatementRepository : IStatementRepository
         {
             list.Add(new StatementTransaction
             {
-                Date = reader.GetDateTime(0),
+                TransactionDate = reader.GetDateTime(0),
                 Description = reader.GetString(1),
                 Debit = reader.GetDecimal(2),
                 Credit = reader.GetDecimal(2),

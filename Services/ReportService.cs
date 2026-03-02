@@ -72,7 +72,7 @@ namespace GTBStatementService.Services
                     statements.Add(new BankStatement
                     {
                         BankName = "GUARANTY TRUST BANK (LIBERIA) LIMITED",
-                        CustomerName = account.AccountName,
+                        AccountName = account.AccountName,
                         AccountNumber = account.AccountId,
                         AccountType = account.AccountType,
                         Currency = account.Currency,

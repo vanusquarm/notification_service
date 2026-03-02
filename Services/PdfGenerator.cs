@@ -1,31 +1,30 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
+using GTBStatementService.Models;
+using iText.IO.Image;
+using iText.Kernel.Font;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas;
+using iText.Kernel.Pdf.Event;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Web;
-using System.Web.Hosting;
 
-using iTextSharp.text;
-using iTextSharp.text.pdf;
 
-public class StatementPdfGenerator : IStatementPdfGenerator
+public class StatementPdfGenerator
 {
     private readonly string _downloadPath;
     private readonly string _logoPath;
 
     public StatementPdfGenerator()
     {
-        _downloadPath = Path.Combine(Utility.MapPath("~/Downloads"), "Temp");
-        Directory.CreateDirectory(_downloadPath);
+        //_downloadPath = Path.Combine(Utility.MapPath("~/Downloads"), "Temp");
+        //Directory.CreateDirectory(_downloadPath);
 
-        _logoPath = Path.Combine(HostingEnvironment.MapPath("~/Resources"), "glogo.jpg");
+        //_logoPath = Path.Combine(HostingEnvironment.MapPath("~/Resources"), "glogo.jpg");
     }
 
     public async Task<string> GenerateAsync(
-        IEnumerable<AccountStatementContext> accounts,
+        IEnumerable<BankStatement> accounts,
         DateTime startDate,
         DateTime endDate,
         string cifId)
@@ -36,14 +35,14 @@ public class StatementPdfGenerator : IStatementPdfGenerator
             $"AC_{month}_{cifId}_Stmt_{Guid.NewGuid()}.pdf");
 
         using var fs = new FileStream(outputFile, FileMode.Create, FileAccess.Write, FileShare.None);
-        using var document = new Document(PageSize.A4, 10, 10, 10, 40);
+        using var writer = new PdfWriter(fs);
+        using var pdfDoc = new PdfDocument(writer);
+        using var document = new Document(pdfDoc);
 
-        PdfWriter writer = PdfWriter.GetInstance(document, fs);
-        writer.PageEvent = new CustomFooterEvent();
+        pdfDoc.GetDocumentInfo().SetAuthor("Appdev-GTBank GH");
+        pdfDoc.GetDocumentInfo().SetSubject("Customer Statement");
 
-        document.AddAuthor("Appdev-GTBank GH");
-        document.AddSubject("Customer Statement");
-        document.Open();
+        //pdfDoc.AddEventHandler(PdfDocumentEvent.END_PAGE, new CustomFooterEvent());
 
         bool firstAccount = true;
 
@@ -51,7 +50,7 @@ public class StatementPdfGenerator : IStatementPdfGenerator
         {
             if (!firstAccount)
             {
-                document.NewPage();
+                document.Add(new AreaBreak(AreaBreakType.NEXT_PAGE));  // Adds new page
             }
 
             AddLogo(document);
@@ -65,69 +64,55 @@ public class StatementPdfGenerator : IStatementPdfGenerator
         return outputFile;
     }
 
-    // ----------------- Helpers -----------------
-
     private void AddLogo(Document document)
     {
         if (!File.Exists(_logoPath)) return;
 
-        Image logo = Image.GetInstance(_logoPath);
+        var logo = new Image(ImageDataFactory.Create(_logoPath));
         logo.ScaleToFit(50f, 50f);
-        logo.Alignment = Element.ALIGN_RIGHT;
-        logo.IndentationRight = 30;
-        logo.SpacingAfter = 5f;
-
+        logo.SetHorizontalAlignment(HorizontalAlignment.RIGHT);
+        logo.SetFixedPosition(450, 800);  // Adjust positioning as needed
         document.Add(logo);
     }
 
-    private void AddHeader(
-        Document document,
-        AccountStatementContext ctx,
-        DateTime startDate,
-        DateTime endDate)
+    private void AddHeader(Document document, BankStatement ctx, DateTime startDate, DateTime endDate)
     {
+        var boldFont = PdfFontFactory.CreateFont("Helvetica-Bold");
         string printDate = DateTime.UtcNow.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture);
 
-        Paragraph period = new Paragraph(
-            $"Statement Period: {startDate:dd-MMM-yyyy} to {endDate:dd-MMM-yyyy}",
-            FontFactory.GetFont(FontFactory.HELVETICA, 8, Font.BOLD))
-        {
-            IndentationLeft = 45,
-            SpacingAfter = 5f
-        };
+        var period = new Paragraph($"Statement Period: {startDate:dd-MMM-yyyy} to {endDate:dd-MMM-yyyy}")
+            .SetFont(PdfFontFactory.CreateFont("HELVETICA"))
+            .SetFontSize(8)
+            .SetFont(boldFont);
+            //.SetMarginLeft(45)
+            //.SetMarginBottom(5);
 
-        Paragraph title = new Paragraph(
-            "CUSTOMER STATEMENT",
-            FontFactory.GetFont(FontFactory.HELVETICA, 12, Font.BOLD))
-        {
-            Alignment = Element.ALIGN_RIGHT,
-            IndentationRight = 45
-        };
+        var title = new Paragraph("CUSTOMER STATEMENT")
+            .SetFont(PdfFontFactory.CreateFont("HELVETICA"))
+            .SetFontSize(12)
+            .SetFont(boldFont);
+            //.SetTextAlignment(TextAlignment.RIGHT)
+            //.SetMarginRight(45);
 
-        Paragraph name = new Paragraph(
-            ctx.Account.AccountName.ToUpper(),
-            FontFactory.GetFont(FontFactory.HELVETICA, 14, Font.BOLD, new BaseColor(255, 69, 0)))
-        {
-            Alignment = Element.ALIGN_RIGHT,
-            IndentationRight = 45,
-            SpacingAfter = 10f
-        };
+        var name = new Paragraph(ctx.AccountName.ToUpper())
+            .SetFont(PdfFontFactory.CreateFont("HELVETICA"))
+            .SetFontSize(14)
+            .SetFont(boldFont);
+            //.SetTextColor(255, 69, 0)
+            //.SetTextAlignment(TextAlignment.RIGHT)
+            //.SetMarginRight(45)
+            //.SetMarginBottom(10);
 
-        PdfPTable header = new PdfPTable(2)
-        {
-            WidthPercentage = 40,
-            HorizontalAlignment = Element.ALIGN_LEFT
-        };
-        header.SetWidths(new[] { 1f, 2f });
-
-        AddHeaderRow(header, "Print Date", printDate);
-        AddHeaderRow(header, "Branch Name", ctx.BranchName);
-        AddHeaderRow(header, "Account No.", ctx.Account.AccountNumber);
-        AddHeaderRow(header, "Address", ctx.Address);
-        AddHeaderRow(header, "Account Type", ctx.ProductType);
-        AddHeaderRow(header, "Currency", ctx.Currency);
-        AddHeaderRow(header, "Opening Balance", ctx.OpeningBalance.ToString("N2"));
-        AddHeaderRow(header, "Closing Balance", ctx.ClosingBalance.ToString("N2"));
+        var header = new Table(2)
+            .SetWidth(100);
+        header.AddCell("Print Date").AddCell(printDate);
+        header.AddCell("Branch Name").AddCell(ctx.BranchName);
+        header.AddCell("Account No.").AddCell(ctx.AccountNumber);
+        header.AddCell("Address").AddCell(ctx.Address);
+        header.AddCell("Account Type").AddCell(ctx.AccountType);
+        header.AddCell("Currency").AddCell(ctx.Currency);
+        header.AddCell("Opening Balance").AddCell(ctx.OpeningBalance.ToString("N2"));
+        header.AddCell("Closing Balance").AddCell(ctx.ClosingBalance.ToString("N2"));
 
         document.Add(period);
         document.Add(header);
@@ -135,88 +120,36 @@ public class StatementPdfGenerator : IStatementPdfGenerator
         document.Add(name);
     }
 
-    private void AddHeaderRow(PdfPTable table, string label, string value)
+    private void AddStatementTable(Document document, BankStatement ctx)
     {
-        Font font = FontFactory.GetFont(FontFactory.HELVETICA, 8, Font.BOLD);
+        var table = new Table(6)
+            .SetWidth(100)
+            .SetMarginTop(10);
 
-        table.AddCell(new PdfPCell(new Phrase(label, font))
+        table.AddHeaderCell("Trans. Date");
+        table.AddHeaderCell("Value Date");
+        table.AddHeaderCell("Debits");
+        table.AddHeaderCell("Credits");
+        table.AddHeaderCell("Balance");
+        table.AddHeaderCell("Remarks");
+
+        if (ctx.Transactions == null || ctx.Transactions.Count == 0)
         {
-            BackgroundColor = new BaseColor(245, 245, 245),
-            Padding = 5
-        });
-
-        table.AddCell(new PdfPCell(new Phrase(value?.ToUpper() ?? string.Empty, font))
-        {
-            BackgroundColor = new BaseColor(245, 245, 245),
-            Padding = 5
-        });
-    }
-
-    private void AddStatementTable(Document document, AccountStatementContext ctx)
-    {
-        PdfPTable table = new PdfPTable(6)
-        {
-            WidthPercentage = 100,
-            SpacingBefore = 10f
-        };
-
-        table.SetWidths(new[] { 12f, 12f, 10f, 10f, 10f, 16f });
-
-        AddTableHeaders(table);
-
-        if (ctx.Statement == null || ctx.Statement.Rows.Count == 0)
-        {
-            table.AddCell(new PdfPCell(new Phrase("No transactions found"))
-            {
-                Colspan = 6,
-                HorizontalAlignment = Element.ALIGN_CENTER,
-                Padding = 10
-            });
+            //table.AddCell("No transactions found").SetHorizontalAlignment(TextAlignment.CENTER);
         }
         else
         {
-            foreach (DataRow row in ctx.Statement.Rows)
+            foreach (StatementTransaction row in ctx.Transactions)
             {
-                table.AddCell(GetCell(row["TransactionDate"]));
-                table.AddCell(GetCell(row["TransactionValueDate"]));
-                table.AddCell(GetAmountCell(row["Debit"]));
-                table.AddCell(GetAmountCell(row["Credit"]));
-                table.AddCell(GetAmountCell(row["Balance"]));
-                table.AddCell(GetCell(row["Remarks"]));
+                table.AddCell(row.TransactionDate.ToString("dd-MMM-yyyy"));
+                table.AddCell(row.TransactionValueDate.ToString("dd-MMM-yyyy"));
+                table.AddCell(row.Debit.ToString("N2"));
+                table.AddCell(row.Credit.ToString("N2"));
+                table.AddCell(row.Balance.ToString("N2"));
+                table.AddCell(row.Remarks);
             }
         }
 
         document.Add(table);
-    }
-
-    private void AddTableHeaders(PdfPTable table)
-    {
-        string[] headers = { "Trans. Date", "Value Date", "Debits", "Credits", "Balance", "Remarks" };
-        Font font = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 8, BaseColor.WHITE);
-
-        foreach (var text in headers)
-        {
-            table.AddCell(new PdfPCell(new Phrase(text, font))
-            {
-                BackgroundColor = BaseColor.BLACK,
-                Border = Rectangle.NO_BORDER,
-                Padding = 5
-            });
-        }
-    }
-
-    private PdfPCell GetCell(object value)
-    {
-        string text = value == DBNull.Value ? "" : value.ToString();
-        return new PdfPCell(new Phrase(text, FontFactory.GetFont(FontFactory.HELVETICA, 8)))
-        {
-            Padding = 5
-        };
-    }
-
-    private PdfPCell GetAmountCell(object value)
-    {
-        decimal amount = value == DBNull.Value ? 0m : Convert.ToDecimal(value);
-        return GetCell(amount > 0 ? amount.ToString("N2") : "");
     }
 }
