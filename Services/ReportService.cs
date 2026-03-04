@@ -1,7 +1,9 @@
-using System.Net.Http;
 using GTBStatementService.Data;
 using GTBStatementService.Data.Mock;
 using GTBStatementService.Models;
+using Org.BouncyCastle.Asn1.Ocsp;
+using System.Collections.Generic;
+using System.Net.Http;
 
 namespace GTBStatementService.Services
 {
@@ -28,7 +30,7 @@ namespace GTBStatementService.Services
             {
                 _logger.LogInformation("Fetching report from: {Url}", requestUrl);
                 var response = await _httpClient.GetAsync(requestUrl);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     return await response.Content.ReadAsByteArrayAsync();
@@ -45,7 +47,7 @@ namespace GTBStatementService.Services
             }
         }
 
-        public List<byte[]> GetStatementReport(string customerNo, string format, string? accountList = null)
+        public async Task<List<byte[]>> GetStatementReport(string customerNo, string format, string? accountList = null)
         {
             try
             {
@@ -61,7 +63,7 @@ namespace GTBStatementService.Services
                     : [];
 
                 if (!accounts.Any())
-                    accounts = _repository.GetCustomerAccounts(accountList).ToList();
+                    accounts = _repository.GetCustomerAccounts(customerNo).ToList();
 
                 var statements = new List<BankStatement>();
 
@@ -83,6 +85,10 @@ namespace GTBStatementService.Services
                 }
 
                 statements.Add(MockFactory.CreateMock()); // For testing
+
+                // Generate and Save to Disk
+                var generator = new StatementPdfGenerator();
+                await generator.GenerateAsync(statements, from, to, customerNo);
 
                 // Generate PDF into memory
                 return PdfService.GeneratePdfBytes(statements);

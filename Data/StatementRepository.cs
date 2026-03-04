@@ -59,7 +59,7 @@ class StatementRepository : IStatementRepository
         string accountNo, DateTime from, DateTime to)
     {
         const string sqlResource =
-            "Assets.GetAccountTransactions.sql";
+            "GTBStatementService.Assets.GetAccountTransactions.sql";
 
         var sql = SqlLoader.Load(sqlResource);
 
@@ -78,11 +78,11 @@ class StatementRepository : IStatementRepository
         {
             list.Add(new StatementTransaction
             {
-                TransactionDate = reader.GetDateTime(0),
-                Description = reader.GetString(1),
-                Debit = reader.GetDecimal(2),
-                Credit = reader.GetDecimal(2),
-                Balance = reader.GetDecimal(3)
+                TransactionDate = reader["TRA_DATE"] as DateTime? ?? default,  // Null-coalescing for nullable DateTime
+                Description = reader["REMARKS"] as string ?? string.Empty,      // Null-coalescing for string
+                Debit = reader["DEBIT"] as decimal? ?? 0m,                     // Null-coalescing for nullable decimal
+                Credit = reader["CREDIT"] as decimal? ?? 0m,                   // Null-coalescing for nullable decimal
+                Balance = reader["RUNNING_BALANCE"] as decimal? ?? 0m          // Null-coalescing for nullable decimal
             });
         }
 
@@ -134,14 +134,14 @@ class StatementRepository : IStatementRepository
 
         string query = @"
         SELECT
-            g.foracid as Account_Id,
-            g.acct_name as Account_Name,
-            g.schm_type as Account_Type,
-            g.acct_crncy_code as Currency
+            g.foracid,
+            g.acct_name,
+            g.schm_type,
+            g.acct_crncy_code
         FROM
             tbaadm.gam g
-            WHERE cif_id = :CUSTOMER_ID
-              AND del_flg = 'N'";
+            WHERE g.cif_id = :CUSTOMER_ID
+              AND g.del_flg = 'N'";
 
         using (var connection = new OracleConnection(_connString))
         using (var command = new OracleCommand(query, connection))
@@ -161,10 +161,10 @@ class StatementRepository : IStatementRepository
                 {
                     results.Add(new Account()
                     {
-                        AccountId = reader["ACCOUNT_ID"].ToString()!,
-                        AccountName = reader["ACCOUNT_NAME"].ToString()!,
-                        AccountType = reader["ACCOUNT_TYPE"].ToString()!,
-                        Currency = reader["CURRENCY"].ToString()!
+                        AccountId = reader["foracid"].ToString()!,
+                        AccountName = reader["acct_name"].ToString()!,
+                        AccountType = reader["schm_type"].ToString()!,
+                        Currency = reader["acct_crncy_code"].ToString()!
                     });
                 }
             }

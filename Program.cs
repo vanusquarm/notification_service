@@ -3,29 +3,48 @@ using GTBStatementService.Data;
 using GTBStatementService.Services;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
+using Serilog;
 
-var builder = Host.CreateApplicationBuilder(args);
 
-QuestPDF.Settings.License = LicenseType.Community;
+try
+{
+	var builder = Host.CreateApplicationBuilder(args);
 
-// Database Configuration
-string connectionString = builder.Configuration.GetConnectionString("ConnectGTMail") 
-    ?? throw new InvalidOperationException("Connection string 'ConnectGTMail' not found.");
+	Log.Logger = new LoggerConfiguration()
+		.ReadFrom.Configuration(builder.Configuration)
+		.CreateLogger();
+	builder.Services.AddSerilog();
 
-builder.Services.AddDbContext<GTMailDbContext>(options =>
-    options.UseSqlServer(connectionString));
+	QuestPDF.Settings.License = LicenseType.Community;
 
-builder.Services.AddScoped<IStatementRepository, StatementRepository>();
+	// Database Configuration
+	string connectionString = builder.Configuration.GetConnectionString("ConnectSQL")
+		?? throw new InvalidOperationException("Connection string 'ConnectGTMail' not found.");
 
-// Register HttpClient for ReportService
-builder.Services.AddHttpClient<IReportService, ReportService>();
+	builder.Services.AddDbContext<GTMailDbContext>(options =>
+		options.UseSqlServer(connectionString));
 
-// Register Application Services
-builder.Services.AddTransient<IEmailService, EmailService>();
-builder.Services.AddTransient<StatementProcessor>();
+	builder.Services.AddScoped<IStatementRepository, StatementRepository>();
 
-// Register Hosted Service
-builder.Services.AddHostedService<Worker>();
+	// Register HttpClient for ReportService
+	builder.Services.AddHttpClient<IReportService, ReportService>();
 
-var host = builder.Build();
-host.Run();
+	// Register Application Services
+	builder.Services.AddTransient<IEmailService, EmailService>();
+	builder.Services.AddTransient<StatementProcessor>();
+
+	// Register Hosted Service
+	builder.Services.AddHostedService<Worker>();
+
+	var app = builder.Build();
+	app.Run();
+
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+	Log.CloseAndFlush();
+}

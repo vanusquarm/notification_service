@@ -108,7 +108,7 @@ namespace GTBStatementService.Services
             string fileName = $"Statement_{profile.CustomerNo}_{DateTime.Now:yyyyMMdd}.{format}";
             
             // 1. Fetch Report
-            List<byte[]> fileContent = _reportService.GetStatementReport(
+            List<byte[]> fileContent = await _reportService.GetStatementReport(
                 profile.CustomerNo, 
                 format, 
                 profile.Allaccounts ?? string.Empty
